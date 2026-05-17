@@ -895,7 +895,7 @@ export default {
       if (url) {
         let fullUrl = url;
         if (!url.startsWith('http')) {
-          fullUrl = 'http://localhost:8090' + url;
+          fullUrl = (process.env.VUE_APP_API_BASE_URL || 'http://localhost:8090') + url;
         }
         window.open(fullUrl, '_blank');
       } else {

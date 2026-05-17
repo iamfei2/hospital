@@ -648,7 +648,7 @@ export default {
         if (url.startsWith('http')) {
           return url;
         }
-        return 'http://localhost:8090' + url;
+        return (process.env.VUE_APP_API_BASE_URL || 'http://localhost:8090') + url;
       }
       return url;
     },
