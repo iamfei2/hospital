@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  检验结果XML导入模板
+  使用说明：
+  1. 请勿修改XML根节点名称和结构
+  2. Patient/ID 为必填项，患者ID必须在系统中存在
+  3. LabReport/ReportTime 为必填项，格式：yyyy-MM-dd HH:mm:ss
+  4. LabReport/ExecuteDept 和 ExecuteDoc 为必填项
+  5. ItemCode 为必填项，必须与系统中的检验项目代码一致（数字格式）
+  6. ResultValue 为必填项，必须为数字
+  7. ResultUnit 为选填，不填则使用系统默认值
+  常用项目代码参考：
+  1=γ-谷氨酰转移酶, 2=丙氨酸氨基转移酶, 14=天冬氨酸氨基转移酶
+  15=尿素, 16=尿酸, 22=总胆红素, 23=总蛋白, 26=甘油三酯
+  34=肌酐, 35=葡萄糖, 6=低密度脂蛋白胆固醇, 44=高密度脂蛋白胆固醇
+-->
+<LabImport>
+  <Records>
+    <Record>
+      <Patient>
+        <ID>患者ID</ID>
+      </Patient>
+      <LabReport>
+        <ReportTime>2026-03-01 10:00:00</ReportTime>
+        <ExecuteDept>检验科</ExecuteDept>
+        <ExecuteDoc>王医生</ExecuteDoc>
+      </LabReport>
+      <LabItems>
+        <Item>
+          <ItemCode>1</ItemCode>
+          <ItemName>γ-谷氨酰转移酶</ItemName>
+          <ResultValue>45.6</ResultValue>
+          <ResultUnit>U/L</ResultUnit>
+        </Item>
+        <Item>
+          <ItemCode>2</ItemCode>
+          <ItemName>丙氨酸氨基转移酶</ItemName>
+          <ResultValue>32.5</ResultValue>
+          <ResultUnit>U/L</ResultUnit>
+        </Item>
+      </LabItems>
+    </Record>
+  </Records>
+</LabImport>

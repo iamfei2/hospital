@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MRI检查XML导入模板
+  使用说明：
+  1. 请勿修改XML根节点名称和结构
+  2. Patient/ID 为必填项，患者ID必须在系统中存在
+  3. 其他字段为选填
+-->
+<ExaminationImport>
+  <Type>mri</Type>
+  <Records>
+    <Record>
+      <Patient>
+        <ID>患者ID</ID>
+      </Patient>
+      <ExaminationInfo>
+        <ExamNo>MRI检查编号</ExamNo>
+        <ExamTime>2026-03-01 10:30:00</ExamTime>
+        <Part>检查部位</Part>
+      </ExaminationInfo>
+      <Report>
+        <Doctor>检查医生</Doctor>
+        <Dept>检查科室</Dept>
+        <Conclusion>报告结论</Conclusion>
+      </Report>
+    </Record>
+  </Records>
+</ExaminationImport>

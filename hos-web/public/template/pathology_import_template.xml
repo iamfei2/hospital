@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  病理检查XML导入模板
+  使用说明：
+  1. 请勿修改XML根节点名称和结构
+  2. Patient/ID 为必填项，患者ID必须在系统中存在
+  3. Specimen/PathologyNo 为必填项（病理号）
+  4. 其他字段为选填
+-->
+<ExaminationImport>
+  <Type>pathology</Type>
+  <Records>
+    <Record>
+      <Patient>
+        <ID>患者ID</ID>
+      </Patient>
+      <Specimen>
+        <PathologyNo>病理号</PathologyNo>
+        <Type>标本类型</Type>
+        <SamplingTime>2026-03-01 09:00:00</SamplingTime>
+      </Specimen>
+      <Diagnosis>
+        <Doctor>诊断医生</Doctor>
+        <Dept>科室</Dept>
+        <Conclusion>诊断结论</Conclusion>
+      </Diagnosis>
+    </Record>
+  </Records>
+</ExaminationImport>
