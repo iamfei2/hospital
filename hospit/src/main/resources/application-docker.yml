@@ -32,6 +32,9 @@ hospit:
   upload:
     path: /app/uploads
 
+file:
+  upload-path: /app/uploads
+
 springdoc:
   api-docs:
     path: /v3/api-docs
