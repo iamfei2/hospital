@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospit.mapper.IsolationForestMapper">
+
+    <resultMap id="BaseResultMap" type="com.hospit.entity.IsolationForestRule">
+        <id column="rule_id" property="ruleId"/>
+        <result column="rule_name" property="ruleName"/>
+        <result column="item_ids" property="itemIds"/>
+        <result column="contamination" property="contamination"/>
+        <result column="threshold_score" property="thresholdScore"/>
+        <result column="severity" property="severity"/>
+        <result column="enabled" property="enabled"/>
+        <result column="description" property="description"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <resultMap id="ModelResultMap" type="com.hospit.entity.IsolationForestModel">
+        <id column="model_id" property="modelId"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="item_ids" property="itemIds"/>
+        <result column="model_params" property="modelParams"/>
+        <result column="trained_at" property="trainedAt"/>
+        <result column="sample_count" property="sampleCount"/>
+        <result column="mean_score" property="meanScore"/>
+        <result column="std_score" property="stdScore"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectModelByRuleId" resultMap="ModelResultMap">
+        SELECT * FROM isolation_forest_model
+        WHERE rule_id = #{ruleId}
+        ORDER BY trained_at DESC LIMIT 1
+    </select>
+
+    <select id="selectLatestModelByItemIds" resultMap="ModelResultMap">
+        SELECT * FROM isolation_forest_model
+        WHERE item_ids = #{itemIds}
+        ORDER BY trained_at DESC LIMIT 1
+    </select>
+
+</mapper>

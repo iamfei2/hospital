@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospit.mapper.LabResultMapper">
+
+    <select id="selectGroupedPage" resultType="java.util.HashMap">
+        SELECT
+            MAX(lr.report_time) AS reportTime,
+            MAX(lr.patient_id) AS patientId,
+            MAX(lr.execute_dept) AS executeDept,
+            MAX(lr.execute_doc) AS executeDoc,
+            MAX(lr.report_url) AS reportUrl,
+            COUNT(*) AS itemCount,
+            SUM(CASE
+                WHEN lr.item_id IS NOT NULL AND lr.item_id > 0
+                AND EXISTS (
+                    SELECT 1 FROM lab_item_dict d
+                    WHERE d.item_id = lr.item_id
+                    AND d.normal_range IS NOT NULL AND d.normal_range != ''
+                    AND (
+                        lr.result_value &lt; CAST(SUBSTRING_INDEX(d.normal_range, '-', 1) AS DECIMAL(10,2))
+                        OR lr.result_value &gt; CAST(SUBSTRING_INDEX(d.normal_range, '-', -1) AS DECIMAL(10,2))
+                    )
+                )
+                THEN 1 ELSE 0
+            END) AS abnormalCount
+        FROM lab_result lr
+        <where>
+            lr.is_invalid = 0
+            <if test="patientId != null and patientId != ''">
+                AND lr.patient_id LIKE CONCAT('%', #{patientId}, '%')
+            </if>
+            <if test="patientName != null and patientName != ''">
+                AND EXISTS (
+                    SELECT 1 FROM patient p
+                    WHERE p.patient_id = lr.patient_id
+                    AND p.patient_name LIKE CONCAT('%', #{patientName}, '%')
+                )
+            </if>
+            <if test="testName != null and testName != ''">
+                AND EXISTS (
+                    SELECT 1 FROM lab_item_dict d
+                    WHERE d.item_id = lr.item_id
+                    AND d.item_name LIKE CONCAT('%', #{testName}, '%')
+                )
+            </if>
+            <if test="resultValue != null and resultValue != ''">
+                AND lr.result_value LIKE CONCAT('%', #{resultValue}, '%')
+            </if>
+            <if test="executeDoc != null and executeDoc != ''">
+                AND lr.execute_doc LIKE CONCAT('%', #{executeDoc}, '%')
+            </if>
+            <if test="executeDept != null and executeDept != ''">
+                AND lr.execute_dept = #{executeDept}
+            </if>
+            <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+                AND lr.report_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+        GROUP BY lr.report_time
+        ORDER BY lr.report_time DESC
+    </select>
+
+    <select id="selectGroupItemIds" resultType="java.util.HashMap">
+        SELECT lr.report_time AS reportTime, lr.item_id AS itemId
+        FROM lab_result lr
+        <where>
+            lr.is_invalid = 0
+            <if test="patientId != null and patientId != ''">
+                AND lr.patient_id LIKE CONCAT('%', #{patientId}, '%')
+            </if>
+            <if test="patientName != null and patientName != ''">
+                AND EXISTS (
+                    SELECT 1 FROM patient p
+                    WHERE p.patient_id = lr.patient_id
+                    AND p.patient_name LIKE CONCAT('%', #{patientName}, '%')
+                )
+            </if>
+            <if test="testName != null and testName != ''">
+                AND EXISTS (
+                    SELECT 1 FROM lab_item_dict d
+                    WHERE d.item_id = lr.item_id
+                    AND d.item_name LIKE CONCAT('%', #{testName}, '%')
+                )
+            </if>
+            <if test="resultValue != null and resultValue != ''">
+                AND lr.result_value LIKE CONCAT('%', #{resultValue}, '%')
+            </if>
+            <if test="executeDoc != null and executeDoc != ''">
+                AND lr.execute_doc LIKE CONCAT('%', #{executeDoc}, '%')
+            </if>
+            <if test="executeDept != null and executeDept != ''">
+                AND lr.execute_dept = #{executeDept}
+            </if>
+            <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+                AND lr.report_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+        ORDER BY lr.report_time DESC
+    </select>
+
+    <select id="selectGroupedPageWithCursor" resultType="java.util.HashMap">
+        SELECT
+            MAX(lr.report_time) AS reportTime,
+            MAX(lr.patient_id) AS patientId,
+            MAX(lr.execute_dept) AS executeDept,
+            MAX(lr.execute_doc) AS executeDoc,
+            MAX(lr.report_url) AS reportUrl,
+            COUNT(*) AS itemCount,
+            SUM(CASE
+                WHEN lr.item_id IS NOT NULL AND lr.item_id > 0
+                AND EXISTS (
+                    SELECT 1 FROM lab_item_dict d
+                    WHERE d.item_id = lr.item_id
+                    AND d.normal_range IS NOT NULL AND d.normal_range != ''
+                    AND (
+                        lr.result_value &lt; CAST(SUBSTRING_INDEX(d.normal_range, '-', 1) AS DECIMAL(10,2))
+                        OR lr.result_value &gt; CAST(SUBSTRING_INDEX(d.normal_range, '-', -1) AS DECIMAL(10,2))
+                    )
+                )
+                THEN 1 ELSE 0
+            END) AS abnormalCount
+        FROM lab_result lr
+        <where>
+            lr.is_invalid = 0
+            <if test="patientId != null and patientId != ''">
+                AND lr.patient_id LIKE CONCAT('%', #{patientId}, '%')
+            </if>
+            <if test="patientName != null and patientName != ''">
+                AND EXISTS (
+                    SELECT 1 FROM patient p
+                    WHERE p.patient_id = lr.patient_id
+                    AND p.patient_name LIKE CONCAT('%', #{patientName}, '%')
+                )
+            </if>
+            <if test="testName != null and testName != ''">
+                AND EXISTS (
+                    SELECT 1 FROM lab_item_dict d
+                    WHERE d.item_id = lr.item_id
+                    AND d.item_name LIKE CONCAT('%', #{testName}, '%')
+                )
+            </if>
+            <if test="resultValue != null and resultValue != ''">
+                AND lr.result_value LIKE CONCAT('%', #{resultValue}, '%')
+            </if>
+            <if test="executeDoc != null and executeDoc != ''">
+                AND lr.execute_doc LIKE CONCAT('%', #{executeDoc}, '%')
+            </if>
+            <if test="executeDept != null and executeDept != ''">
+                AND lr.execute_dept = #{executeDept}
+            </if>
+            <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+                AND lr.report_time BETWEEN #{startTime} AND #{endTime}
+            </if>
+            <if test="cursor != null and cursor != ''">
+                AND lr.report_time &lt; #{cursor}
+            </if>
+        </where>
+        GROUP BY lr.report_time
+        ORDER BY lr.report_time DESC
+        LIMIT #{pageSize}
+    </select>
+
+    <select id="countGroupedPageWithCursor" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM (
+            SELECT lr.report_time
+            FROM lab_result lr
+            <where>
+                lr.is_invalid = 0
+                <if test="patientId != null and patientId != ''">
+                    AND lr.patient_id LIKE CONCAT('%', #{patientId}, '%')
+                </if>
+                <if test="patientName != null and patientName != ''">
+                    AND EXISTS (
+                        SELECT 1 FROM patient p
+                        WHERE p.patient_id = lr.patient_id
+                        AND p.patient_name LIKE CONCAT('%', #{patientName}, '%')
+                    )
+                </if>
+                <if test="testName != null and testName != ''">
+                    AND EXISTS (
+                        SELECT 1 FROM lab_item_dict d
+                        WHERE d.item_id = lr.item_id
+                        AND d.item_name LIKE CONCAT('%', #{testName}, '%')
+                    )
+                </if>
+                <if test="resultValue != null and resultValue != ''">
+                    AND lr.result_value LIKE CONCAT('%', #{resultValue}, '%')
+                </if>
+                <if test="executeDoc != null and executeDoc != ''">
+                    AND lr.execute_doc LIKE CONCAT('%', #{executeDoc}, '%')
+                </if>
+                <if test="executeDept != null and executeDept != ''">
+                    AND lr.execute_dept = #{executeDept}
+                </if>
+                <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+                    AND lr.report_time BETWEEN #{startTime} AND #{endTime}
+                </if>
+                <if test="cursor != null and cursor != ''">
+                    AND lr.report_time &lt; #{cursor}
+                </if>
+            </where>
+            GROUP BY lr.report_time
+        ) AS grouped_result
+    </select>
+
+</mapper>

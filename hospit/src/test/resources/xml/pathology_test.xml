@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  病理检查XML导入测试文件
+  患者ID: P0001 (测试用患者ID)
+  说明: 此文件用于测试病理检查结果的XML导入功能
+-->
+<ExaminationImport>
+  <Type>pathology</Type>
+  <Records>
+    <Record>
+      <Patient>
+        <ID>102580</ID>
+      </Patient>
+      <Specimen>
+        <PathologyNo>PA20260315001</PathologyNo>
+        <Type>胃窦粘膜活检</Type>
+        <SamplingTime>2026-03-15 11:00:00</SamplingTime>
+      </Specimen>
+      <Diagnosis>
+        <Doctor>赵病理医生</Doctor>
+        <Dept>病理科</Dept>
+        <Conclusion>（胃窦）粘膜慢性炎症，腺体轻度肠上皮化生，HP相关改变请结合临床。萎缩（-），肠化（+），异型增生（-）。</Conclusion>
+      </Diagnosis>
+    </Record>
+  </Records>
+</ExaminationImport>

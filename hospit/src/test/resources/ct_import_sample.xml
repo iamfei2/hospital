@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExaminationImport>
+  <Type>ct</Type>
+  <Records>
+    <Record>
+      <Patient>
+        <ID>P001</ID>
+        <Name>张三</Name>
+      </Patient>
+      <ExaminationInfo>
+        <ExamNo>CT20260301001</ExamNo>
+        <ExamTime>2026-03-01 10:30:00</ExamTime>
+        <Part>胸部+上腹部</Part>
+      </ExaminationInfo>
+      <Report>
+        <Doctor>李医生</Doctor>
+        <Dept>放射科</Dept>
+        <Conclusion>未见明显异常</Conclusion>
+      </Report>
+    </Record>
+    <Record>
+      <Patient>
+        <ID>P002</ID>
+        <Name>李四</Name>
+      </Patient>
+      <ExaminationInfo>
+        <ExamNo>CT20260301002</ExamNo>
+        <ExamTime>2026-03-01 11:00:00</ExamTime>
+        <Part>颅脑</Part>
+      </ExaminationInfo>
+      <Report>
+        <Doctor>王医生</Doctor>
+        <Dept>放射科</Dept>
+        <Conclusion>脑部未见缺血灶</Conclusion>
+      </Report>
+    </Record>
+  </Records>
+</ExaminationImport>

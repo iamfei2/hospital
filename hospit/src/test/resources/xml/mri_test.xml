@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MRI检查XML导入测试文件
+  患者ID: P0001 (测试用患者ID)
+  说明: 此文件用于测试MRI检查结果的XML导入功能
+-->
+<ExaminationImport>
+  <Type>mri</Type>
+  <Records>
+    <Record>
+      <Patient>
+        <ID>102580</ID>
+      </Patient>
+      <ExaminationInfo>
+        <ExamNo>MRI20260315001</ExamNo>
+        <ExamTime>2026-03-15 14:00:00</ExamTime>
+        <Part>颅脑</Part>
+      </ExaminationInfo>
+      <Report>
+        <Doctor>王磁共振技师</Doctor>
+        <Dept>磁共振室</Dept>
+        <Conclusion>颅脑MRI平扫未见明显异常信号。双侧大脑半球对称，灰白质分界清晰。脑室系统形态正常，中线结构居中。小脑及脑干形态信号正常。DWI未见弥散受限征象。</Conclusion>
+      </Report>
+    </Record>
+  </Records>
+</ExaminationImport>

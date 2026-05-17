@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LabImport>
+  <Records>
+    <Record>
+      <Patient>
+        <ID>P001</ID>
+        <Name>张三</Name>
+      </Patient>
+      <LabReport>
+        <ReportTime>2026-03-01 10:00:00</ReportTime>
+        <ExecuteDept>检验科</ExecuteDept>
+        <ExecuteDoc>王医生</ExecuteDoc>
+      </LabReport>
+      <LabItems>
+        <Item>
+          <ItemCode>GAMMA_GT</ItemCode>
+          <ItemName>γ-谷氨酰转移酶</ItemName>
+          <ResultValue>45.6</ResultValue>
+          <ResultUnit>U/L</ResultUnit>
+        </Item>
+        <Item>
+          <ItemCode>ALT</ItemCode>
+          <ItemName>谷丙转氨酶</ItemName>
+          <ResultValue>32.5</ResultValue>
+          <ResultUnit>U/L</ResultUnit>
+        </Item>
+        <Item>
+          <ItemCode>AST</ItemCode>
+          <ItemName>谷草转氨酶</ItemName>
+          <ResultValue>28.0</ResultValue>
+          <ResultUnit>U/L</ResultUnit>
+        </Item>
+      </LabItems>
+    </Record>
+  </Records>
+</LabImport>

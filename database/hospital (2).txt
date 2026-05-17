@@ -1,0 +1,476 @@
+/*
+ Navicat Premium Dump SQL
+
+ Source Server         : 123
+ Source Server Type    : MySQL
+ Source Server Version : 80040 (8.0.40)
+ Source Host           : localhost:3306
+ Source Schema         : hospital
+
+ Target Server Type    : MySQL
+ Target Server Version : 80040 (8.0.40)
+ File Encoding         : 65001
+
+ Date: 03/05/2026 19:53:45
+*/
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for api_access
+-- ----------------------------
+DROP TABLE IF EXISTS `api_access`;
+CREATE TABLE `api_access`  (
+  `access_id` bigint NOT NULL AUTO_INCREMENT COMMENT '访问凭证ID',
+  `app_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '应用名称',
+  `api_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'API Key',
+  `api_secret` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'API Secret',
+  `enabled` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用',
+  `rate_limit` int NULL DEFAULT 1000 COMMENT '每分钟请求限制',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`access_id`) USING BTREE,
+  UNIQUE INDEX `api_key`(`api_key` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '对外API访问凭证表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for attachment
+-- ----------------------------
+DROP TABLE IF EXISTS `attachment`;
+CREATE TABLE `attachment`  (
+  `attachment_id` bigint NOT NULL AUTO_INCREMENT COMMENT '附件ID（主键）',
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（关联t_patient.patient_id）',
+  `attachment_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '附件名称（如“20230917CT影像.png”）',
+  `attachment_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '附件类型（如“CT影像”“病历原图”）',
+  `storage_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '附件存储路径/访问链接',
+  `user_id` int NOT NULL COMMENT '上传人ID（关联t_user.user_id，当前登录用户）',
+  `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+  `related_result_id` bigint NULL DEFAULT NULL COMMENT '关联检验结果ID（可选，如附件属于某检验）',
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  PRIMARY KEY (`attachment_id`) USING BTREE,
+  INDEX `idx_attachment_patient`(`patient_id` ASC) USING BTREE COMMENT '快速查询患者附件',
+  INDEX `idx_attachment_type`(`attachment_type` ASC) USING BTREE COMMENT '按类型筛选附件',
+  INDEX `idx_attachment_user`(`user_id` ASC) USING BTREE COMMENT '查询用户上传的附件',
+  INDEX `fk_attachment_result`(`related_result_id` ASC) USING BTREE,
+  CONSTRAINT `fk_attachment_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_attachment_result` FOREIGN KEY (`related_result_id`) REFERENCES `lab_result` (`result_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_attachment_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '附件存储表（CT影像/病历原图等）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for ct_examination
+-- ----------------------------
+DROP TABLE IF EXISTS `ct_examination`;
+CREATE TABLE `ct_examination`  (
+  `ct_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'CT检查ID（主键）',
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（关联patient.patient_id）',
+  `examination_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查编号（唯一，对接院内检查系统）',
+  `examination_time` datetime NULL DEFAULT NULL COMMENT '检查时间',
+  `examination_part` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查部位（如“胸部+上腹部”）',
+  `examine_doctor` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查医生',
+  `examine_dept` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查科室',
+  `report_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'CT报告PDF文件访问链接',
+  `image_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT 'CT影像DICOM/图片文件访问链接（多文件用逗号分隔）',
+  `report_conclusion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '检查报告结论（可选录入）',
+  `user_id` int NOT NULL COMMENT '上传人ID（关联user.user_id，当前登录用户）',
+  `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '文件上传时间',
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '数据更新时间',
+  PRIMARY KEY (`ct_id`) USING BTREE,
+  UNIQUE INDEX `idx_examination_no`(`examination_no` ASC) USING BTREE COMMENT '检查编号唯一索引',
+  INDEX `idx_ct_patient`(`patient_id` ASC) USING BTREE COMMENT '快速查询患者CT检查记录',
+  INDEX `idx_ct_examination_time`(`examination_time` ASC) USING BTREE COMMENT '按检查时间筛选索引',
+  INDEX `idx_ct_user`(`user_id` ASC) USING BTREE COMMENT '查询用户上传的CT记录',
+  INDEX `idx_import_dup`(`examination_no` ASC, `patient_id` ASC, `examination_time` ASC) USING BTREE,
+  INDEX `idx_query_patient`(`patient_id` ASC) USING BTREE,
+  INDEX `idx_query_time`(`examination_time` ASC) USING BTREE,
+  INDEX `idx_query_dept`(`examine_dept` ASC) USING BTREE,
+  CONSTRAINT `fk_ct_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_ct_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'CT检查专项表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for enteroscopy_examination
+-- ----------------------------
+DROP TABLE IF EXISTS `enteroscopy_examination`;
+CREATE TABLE `enteroscopy_examination`  (
+  `enteroscopy_id` bigint NOT NULL AUTO_INCREMENT COMMENT '肠镜检查ID（主键）',
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（关联patient.patient_id）',
+  `examination_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查编号（唯一，对接院内检查系统）',
+  `examination_time` datetime NULL DEFAULT NULL COMMENT '检查时间',
+  `enteroscopy_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '肠镜类型（如“普通肠镜”“无痛肠镜”）',
+  `examine_doctor` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '操作医生',
+  `examine_dept` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查科室',
+  `report_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '肠镜报告PDF文件访问链接',
+  `image_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '肠镜镜下图片文件访问链接（多文件用逗号分隔）',
+  `report_conclusion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '镜下诊断与结论（可选录入）',
+  `user_id` int NOT NULL COMMENT '上传人ID（关联user.user_id，当前登录用户）',
+  `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '文件上传时间',
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '数据更新时间',
+  PRIMARY KEY (`enteroscopy_id`) USING BTREE,
+  UNIQUE INDEX `idx_examination_no`(`examination_no` ASC) USING BTREE COMMENT '检查编号唯一索引',
+  INDEX `idx_enteroscopy_patient`(`patient_id` ASC) USING BTREE COMMENT '快速查询患者肠镜检查记录',
+  INDEX `idx_enteroscopy_examination_time`(`examination_time` ASC) USING BTREE COMMENT '按检查时间筛选索引',
+  INDEX `idx_enteroscopy_user`(`user_id` ASC) USING BTREE COMMENT '查询用户上传的肠镜记录',
+  INDEX `idx_import_dup`(`examination_no` ASC, `patient_id` ASC, `examination_time` ASC) USING BTREE,
+  INDEX `idx_query_patient`(`patient_id` ASC) USING BTREE,
+  INDEX `idx_query_time`(`examination_time` ASC) USING BTREE,
+  INDEX `idx_query_dept`(`examine_dept` ASC) USING BTREE,
+  CONSTRAINT `fk_enteroscopy_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_enteroscopy_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '肠镜检查专项表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for isolation_forest_model
+-- ----------------------------
+DROP TABLE IF EXISTS `isolation_forest_model`;
+CREATE TABLE `isolation_forest_model`  (
+  `model_id` bigint NOT NULL AUTO_INCREMENT COMMENT '模型ID',
+  `rule_id` bigint NOT NULL COMMENT '关联规则ID',
+  `item_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '指标ID列表',
+  `model_params` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '模型参数JSON',
+  `trained_at` datetime NULL DEFAULT NULL COMMENT '训练时间',
+  `sample_count` int NULL DEFAULT 0 COMMENT '训练样本数量',
+  `mean_score` decimal(5, 4) NULL DEFAULT NULL COMMENT '训练集平均得分',
+  `std_score` decimal(5, 4) NULL DEFAULT NULL COMMENT '训练集得分标准差',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`model_id`) USING BTREE,
+  INDEX `idx_rule_item`(`rule_id` ASC, `item_ids`(100) ASC) USING BTREE,
+  CONSTRAINT `isolation_forest_model_ibfk_1` FOREIGN KEY (`rule_id`) REFERENCES `isolation_forest_rule` (`rule_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '孤立森林模型参数表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for isolation_forest_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `isolation_forest_rule`;
+CREATE TABLE `isolation_forest_rule`  (
+  `rule_id` bigint NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `rule_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '规则名称',
+  `item_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '指标ID列表，用逗号分隔',
+  `contamination` decimal(3, 2) NULL DEFAULT 0.10 COMMENT '污染率（异常比例估计）',
+  `threshold_score` decimal(3, 2) NULL DEFAULT 0.50 COMMENT '异常阈值（0-1之间）',
+  `enabled` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用',
+  `severity` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'WARNING' COMMENT '严重级别',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '规则描述',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`rule_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '孤立森林多指标组合规则表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for isolation_forest_samples
+-- ----------------------------
+DROP TABLE IF EXISTS `isolation_forest_samples`;
+CREATE TABLE `isolation_forest_samples`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `rule_id` bigint NOT NULL COMMENT '关联规则ID',
+  `patient_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID',
+  `report_time` datetime NOT NULL COMMENT '报告时间',
+  `feature_values` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '特征值JSON，按item_ids顺序排列',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_rule_time`(`rule_id` ASC, `report_time` ASC) USING BTREE,
+  INDEX `idx_patient`(`patient_id` ASC, `report_time` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '孤立森林样本缓存表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for lab_item_dict
+-- ----------------------------
+DROP TABLE IF EXISTS `lab_item_dict`;
+CREATE TABLE `lab_item_dict`  (
+  `item_id` int NOT NULL AUTO_INCREMENT COMMENT '检验项目ID（主键）',
+  `item_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '检验项目名称（如“γ-谷氨酰转移酶”，唯一）',
+  `item_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '检验项目编码（如“GAMMA_GT”，唯一，便于程序识别）',
+  `default_unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '默认单位（如“U/L”“mmol/L”）',
+  `normal_range` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '正常参考范围（如“0-40”，用于患病判断）',
+  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注（如“★标记为核心指标”）',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`item_id`) USING BTREE,
+  UNIQUE INDEX `idx_item_name`(`item_name` ASC) USING BTREE,
+  UNIQUE INDEX `idx_item_code`(`item_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 17120 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '检验项目字典表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for lab_item_statistics
+-- ----------------------------
+DROP TABLE IF EXISTS `lab_item_statistics`;
+CREATE TABLE `lab_item_statistics`  (
+  `stat_id` bigint NOT NULL AUTO_INCREMENT,
+  `item_id` int NOT NULL,
+  `dept_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'GLOBAL',
+  `sample_count` int NULL DEFAULT 0,
+  `mean_value` decimal(14, 4) NULL DEFAULT NULL,
+  `std_deviation` decimal(14, 4) NULL DEFAULT NULL,
+  `min_value` decimal(14, 4) NULL DEFAULT NULL,
+  `max_value` decimal(14, 4) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`stat_id`) USING BTREE,
+  UNIQUE INDEX `uk_item_dept`(`item_id` ASC, `dept_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 132 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for lab_result
+-- ----------------------------
+DROP TABLE IF EXISTS `lab_result`;
+CREATE TABLE `lab_result`  (
+  `result_id` bigint NOT NULL AUTO_INCREMENT COMMENT '检验结果ID（主键）',
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（关联patient.patient_id）',
+  `item_id` int NULL DEFAULT NULL COMMENT '检验项目ID（关联lab_item_dict.item_id）',
+  `result_value` decimal(10, 2) NULL DEFAULT NULL COMMENT '检验结果值（如16.0、31.0）',
+  `result_unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '结果单位（兼容特殊情况，优先与字典表一致）',
+  `report_time` datetime NOT NULL COMMENT '报告时间（即检查日期，核心必填字段）',
+  `execute_dept` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '执行科室（核心必填字段）',
+  `execute_doc` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '执行医生（核心必填字段）',
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '数据更新时间',
+  `report_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检验报告PDF链接',
+  PRIMARY KEY (`result_id`) USING BTREE,
+  INDEX `idx_patient_id`(`patient_id` ASC) USING BTREE COMMENT '快速查询患者所有检验结果',
+  INDEX `idx_item_id`(`item_id` ASC) USING BTREE COMMENT '快速查询某项目所有结果',
+  INDEX `idx_report_time`(`report_time` ASC) USING BTREE COMMENT '按时间统计索引',
+  INDEX `idx_patient_item_time`(`patient_id` ASC, `item_id` ASC, `report_time` ASC) USING BTREE COMMENT '患者某指标时间变化查询索引',
+  INDEX `idx_lab_result_report_time`(`report_time` ASC) USING BTREE,
+  INDEX `idx_lab_result_patient_id`(`patient_id` ASC) USING BTREE,
+  INDEX `idx_lab_result_is_invalid`(`is_invalid` ASC) USING BTREE,
+  CONSTRAINT `fk_lab_result_item` FOREIGN KEY (`item_id`) REFERENCES `lab_item_dict` (`item_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_lab_result_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 439060 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '患者检验结果表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for medical_order
+-- ----------------------------
+DROP TABLE IF EXISTS `medical_order`;
+CREATE TABLE `medical_order`  (
+  `order_id` bigint NOT NULL AUTO_INCREMENT COMMENT '医嘱ID（主键）',
+  `hospitalization_times` int NOT NULL COMMENT '住院次',
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（关联t_patient.patient_id）',
+  `order_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '医嘱项名称（如“胰岛素注射液”）',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '医嘱开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '医嘱结束时间',
+  `order_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '医嘱状态（如“停止”）',
+  `order_frequency` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '医嘱频率（如“一次”）',
+  `execute_dept` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '执行科室（可选补充）',
+  `execute_doc` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '执行医生（可选补充）',
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '数据更新时间',
+  PRIMARY KEY (`order_id`) USING BTREE,
+  INDEX `idx_order_patient`(`patient_id` ASC) USING BTREE COMMENT '快速查询患者医嘱',
+  INDEX `idx_order_start_time`(`start_time` ASC) USING BTREE COMMENT '按时间筛选医嘱',
+  CONSTRAINT `fk_order_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 10545 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '医嘱信息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for mri_examination
+-- ----------------------------
+DROP TABLE IF EXISTS `mri_examination`;
+CREATE TABLE `mri_examination`  (
+  `mri_id` bigint NOT NULL AUTO_INCREMENT COMMENT '核磁检查ID（主键）',
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（关联patient.patient_id）',
+  `examination_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查编号（唯一，对接院内检查系统）',
+  `examination_time` datetime NULL DEFAULT NULL COMMENT '检查时间',
+  `examination_part` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查部位（如“颅脑弥散加权”）',
+  `examine_doctor` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查医生',
+  `examine_dept` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检查科室',
+  `report_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '核磁报告PDF文件访问链接',
+  `image_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '核磁影像DICOM/图片文件访问链接（多文件用逗号分隔）',
+  `report_conclusion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '检查报告结论（可选录入）',
+  `user_id` int NOT NULL COMMENT '上传人ID（关联user.user_id，当前登录用户）',
+  `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '文件上传时间',
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '数据更新时间',
+  PRIMARY KEY (`mri_id`) USING BTREE,
+  UNIQUE INDEX `idx_examination_no`(`examination_no` ASC) USING BTREE COMMENT '检查编号唯一索引',
+  INDEX `idx_mri_patient`(`patient_id` ASC) USING BTREE COMMENT '快速查询患者核磁检查记录',
+  INDEX `idx_mri_examination_time`(`examination_time` ASC) USING BTREE COMMENT '按检查时间筛选索引',
+  INDEX `idx_mri_user`(`user_id` ASC) USING BTREE COMMENT '查询用户上传的核磁记录',
+  INDEX `idx_import_dup`(`examination_no` ASC, `patient_id` ASC, `examination_time` ASC) USING BTREE,
+  INDEX `idx_query_patient`(`patient_id` ASC) USING BTREE,
+  INDEX `idx_query_time`(`examination_time` ASC) USING BTREE,
+  INDEX `idx_query_dept`(`examine_dept` ASC) USING BTREE,
+  CONSTRAINT `fk_mri_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_mri_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '核磁(MRI)检查专项表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for operation_log
+-- ----------------------------
+DROP TABLE IF EXISTS `operation_log`;
+CREATE TABLE `operation_log`  (
+  `log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志ID（主键）',
+  `user_id` int NOT NULL COMMENT '操作人ID（关联t_user.user_id，当前登录用户）',
+  `operation_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+  `operation_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作类型：新增/修改/作废',
+  `operated_table` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作的表名（如“t_lab_result”“t_patient”）',
+  `related_record_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关联的记录ID（如result_id、patient_id）',
+  `before_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '修改前内容（JSON格式，如{\"result_value\":\"15.0\"}）',
+  `after_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '修改后内容（JSON格式）',
+  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '操作备注（如“修正检验结果录入错误”）',
+  PRIMARY KEY (`log_id`) USING BTREE,
+  INDEX `idx_log_user`(`user_id` ASC) USING BTREE COMMENT '查询某用户的所有操作',
+  INDEX `idx_log_time`(`operation_time` ASC) USING BTREE COMMENT '按时间筛选日志',
+  INDEX `idx_log_table_record`(`operated_table` ASC, `related_record_id` ASC) USING BTREE COMMENT '查询某条记录的所有操作',
+  CONSTRAINT `fk_log_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 110 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志表（全量操作留痕）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for pathology_examination
+-- ----------------------------
+DROP TABLE IF EXISTS `pathology_examination`;
+CREATE TABLE `pathology_examination`  (
+  `pathology_id` bigint NOT NULL AUTO_INCREMENT COMMENT '病理检查ID（主键）',
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（关联patient.patient_id）',
+  `pathology_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '病理号（唯一，院内病理系统核心编号）',
+  `specimen_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '标本类型（如“结肠活检组织”）',
+  `sampling_time` datetime NULL DEFAULT NULL COMMENT '标本取样时间',
+  `report_time` datetime NULL DEFAULT NULL COMMENT '病理报告出具时间',
+  `pathology_doctor` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '病理诊断医生',
+  `pathology_dept` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '病理科',
+  `report_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '病理报告PDF文件访问链接',
+  `slide_image_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '病理切片图片文件访问链接（多文件用逗号分隔）',
+  `pathology_diagnosis` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '病理诊断结论（可选录入）',
+  `user_id` int NOT NULL COMMENT '上传人ID（关联user.user_id，当前登录用户）',
+  `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '文件上传时间',
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '数据更新时间',
+  PRIMARY KEY (`pathology_id`) USING BTREE,
+  UNIQUE INDEX `idx_pathology_no`(`pathology_no` ASC) USING BTREE COMMENT '病理号唯一索引',
+  INDEX `idx_pathology_patient`(`patient_id` ASC) USING BTREE COMMENT '快速查询患者病理检查记录',
+  INDEX `idx_pathology_report_time`(`report_time` ASC) USING BTREE COMMENT '按报告时间筛选索引',
+  INDEX `idx_pathology_user`(`user_id` ASC) USING BTREE COMMENT '查询用户上传的病理记录',
+  INDEX `idx_import_dup`(`pathology_no` ASC, `patient_id` ASC, `sampling_time` ASC) USING BTREE,
+  INDEX `idx_query_patient`(`patient_id` ASC) USING BTREE,
+  INDEX `idx_query_time`(`sampling_time` ASC) USING BTREE,
+  INDEX `idx_query_dept`(`pathology_dept` ASC) USING BTREE,
+  CONSTRAINT `fk_pathology_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_pathology_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '病理检查专项表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for patient
+-- ----------------------------
+DROP TABLE IF EXISTS `patient`;
+CREATE TABLE `patient`  (
+  `patient_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者ID（病案号，与Excel一致）',
+  `patient_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '患者姓名（核心必填字段）',
+  `gender` char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '性别（男/女）',
+  `age` int NULL DEFAULT NULL COMMENT '年龄',
+  `phone` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `is_invalid` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除标识：0=有效，1=作废',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '数据创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '数据更新时间',
+  `id_card` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`patient_id`) USING BTREE,
+  INDEX `idx_patient_name`(`patient_name` ASC) USING BTREE COMMENT '按姓名快速查询索引',
+  INDEX `patient_id`(`patient_id` ASC) USING BTREE,
+  INDEX `patient_id_2`(`patient_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '患者信息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for search_template
+-- ----------------------------
+DROP TABLE IF EXISTS `search_template`;
+CREATE TABLE `search_template`  (
+  `template_id` bigint NOT NULL AUTO_INCREMENT,
+  `template_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `template_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `query_conditions` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+  `user_id` int NULL DEFAULT NULL,
+  `is_shared` tinyint NULL DEFAULT 0,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`template_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for statistics_dimension
+-- ----------------------------
+DROP TABLE IF EXISTS `statistics_dimension`;
+CREATE TABLE `statistics_dimension`  (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `dimension_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '维度标识',
+  `dimension_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '维度标签',
+  `group_by_field` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '分组字段名',
+  `table_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '适用的表名(NULL表示通用)',
+  `time_format` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '时间格式化表达式(%Y-%m等)',
+  `sort_order` int NULL DEFAULT 0 COMMENT '排序顺序',
+  `is_valid` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用: 0-禁用 1-启用',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_dimension_name`(`dimension_name` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '统计维度配置表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for user
+-- ----------------------------
+DROP TABLE IF EXISTS `user`;
+CREATE TABLE `user`  (
+  `user_id` int NOT NULL AUTO_INCREMENT COMMENT '用户ID（主键）',
+  `login_account` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '登录账号（唯一，如工号）',
+  `login_password` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '加密后的登录密码（建议bcrypt/MD5加密）',
+  `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户姓名（科室人员名称）',
+  `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '账号状态：1=启用，0=禁用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '账号创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '账号更新时间',
+  `role` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'user' COMMENT '用户角色：admin=超级管理员，user=普通用户',
+  PRIMARY KEY (`user_id`) USING BTREE,
+  UNIQUE INDEX `idx_login_account`(`login_account` ASC) USING BTREE COMMENT '登录账号唯一索引，确保认证唯一'
+) ENGINE = InnoDB AUTO_INCREMENT = 461 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '科室用户登录信息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for warning_record
+-- ----------------------------
+DROP TABLE IF EXISTS `warning_record`;
+CREATE TABLE `warning_record`  (
+  `warning_id` bigint NOT NULL AUTO_INCREMENT COMMENT '预警ID',
+  `patient_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '患者ID',
+  `patient_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '患者姓名',
+  `item_id` int NULL DEFAULT NULL COMMENT '检验项目ID',
+  `item_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '检验项目名称',
+  `result_id` bigint NULL DEFAULT NULL COMMENT '关联检验结果ID',
+  `rule_id` bigint NOT NULL COMMENT '触发规则ID',
+  `rule_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '规则类型',
+  `severity` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '严重级别',
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '预警消息',
+  `result_value` decimal(10, 2) NULL DEFAULT NULL COMMENT '触发时的检验值',
+  `is_read` tinyint(1) NULL DEFAULT 0 COMMENT '是否已读：0=未读，1=已读',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '触发时间',
+  `examination_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `examination_id` bigint NULL DEFAULT NULL,
+  PRIMARY KEY (`warning_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 405565 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '预警记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for warning_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `warning_rule`;
+CREATE TABLE `warning_rule`  (
+  `rule_id` bigint NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `rule_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '规则名称',
+  `rule_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '规则类型：THRESHOLD(指标异常)/MISSING(数据缺失)/OPERATION(操作异常)',
+  `item_id` int NULL DEFAULT NULL COMMENT '关联检验项目ID，NULL表示全局规则',
+  `condition_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '条件类型：ABOVE/BELOW/RANGE/TREND_UP/TREND_DOWN/MISSING_DAYS',
+  `threshold_low` decimal(10, 2) NULL DEFAULT NULL COMMENT '下限阈值',
+  `threshold_high` decimal(10, 2) NULL DEFAULT NULL COMMENT '上限阈值',
+  `missing_days` int NULL DEFAULT NULL COMMENT '缺失天数（数据缺失预警用）',
+  `severity` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '严重级别：INFO/WARNING/CRITICAL/EMERGENCY',
+  `enabled` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用：0=禁用，1=启用',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '规则描述',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `off_hour_start` int NULL DEFAULT NULL COMMENT '下班时间（小时，0-23，默认22）',
+  `off_hour_end` int NULL DEFAULT NULL COMMENT '上班时间（小时，0-23，默认6）',
+  `off_days` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '休息日，逗号分隔，如0,6表示周日和周六',
+  `rule_expression` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '组合条件表达式(JSON)',
+  PRIMARY KEY (`rule_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '预警规则表' ROW_FORMAT = Dynamic;
+
+SET FOREIGN_KEY_CHECKS = 1;
